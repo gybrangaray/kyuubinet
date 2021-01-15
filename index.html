@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head> 
+    <meta charset="UTF-8">
+	<meta name="viewport" content="initial-scale=1.0">
+    <title>Mini Copiloto</title>
+	<style> 
+  	  #map, #pano {
+        height: 50%;
+      }
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+	</style> 
+</head>  
+	<body>
+        <!-- Elementos Pintados -->
+		<div id ="map"> </div> 
+        <div id ="pano"> </div> 
+        <!-- Script de Google Maps -->
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSKBDdPPlfca_zTwyxKiicRQn1qfgRjLw&callback=initMap&sensor=false&v=3.exp" async defer></script>
+	<script>
+        //Consumo de Datos
+    const getLocations = () => {
+    fetch("https://www.datos.gov.co/resource/g373-n3yy.json")
+    .then((response) => response.json())
+    .then((locations) => {
+      let locationsInfo = [];
+
+      locations.forEach((location) => {
+            let locationData = {
+            position: {
+                lat: location.punto.coordinates[1],
+                lng: location.punto.coordinates[0]
+            },
+            name: location.nombre_sede
+            };
+            locationsInfo.push(locationData);
+        });
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((data) => {
+            let currentPosition = {
+                lat: data.coords.latitude,
+                lng: data.coords.longitude
+            };
+            //Funciones Propias
+            dibujarMapa(currentPosition, locationsInfo);
+            dibujarPano(currentPosition);
+            });
+        }
+        });
+    };
+    const dibujarMapa = (obj, locationsInfo) => {
+    let map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 4,
+        center: obj
+    });
+    let marker = new google.maps.Marker({
+        position: obj,
+        title: "Tu ubicacion"
+    });
+    marker.addListener("click", () => {
+        console.log(marker);
+        });
+    marker.setMap(map);
+    locationsInfo.map((place, index) => {
+        const marker = new google.maps.Marker({
+        position: place.position,
+        title: place.name,
+        map: map,
+        });
+        handlePano(marker);
+    });
+    };
+    const dibujarPano = (currentPosition) => {
+        const panorama = new google.maps.StreetViewPanorama(
+        document.getElementById("pano"),
+        {
+        position: currentPosition,
+        pov: {
+            heading: 34,
+            pitch: 10,
+        },
+        }
+    );
+    map.setStreetView(panorama);
+    }
+    const handlePano = (marker) => {
+        marker.addListener("click", () => {
+        dibujarPano(marker.getPosition());
+        });
+    }
+    window.addEventListener("load", getLocations);
+	</script>
+	</body> 
+</html>
